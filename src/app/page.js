@@ -1,103 +1,238 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import Navbar from "./components/Navbar";
+import Card from "./components/Card";
+import TimeFilterBar from "./components/TimeFilterBar";
+import StatCard from "./components/StatCard";
+import ClientsBubbleChart from "./components/ClientsBubbleChart";
+import SipBusinessChart from "./components/SipBusinessChart";
+import MonthlyMisChart from "./components/MonthlyMisChart";
+import ChartSkeleton from "./components/ChartSkeleton";
+import ThemeToggle from "./components/ThemeToggle";
 
-export default function Home() {
+async function getJSON(path) {
+  const res = await fetch(path, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed fetch " + path);
+  return res.json();
+}
+
+export default function Page() {
+  const [range, setRange] = useState("3d");
+  const [loadingTop, setLoadingTop] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingCharts, setLoadingCharts] = useState(true);
+
+  const [aum, setAum] = useState(null);
+  const [sip, setSip] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [sipBiz, setSipBiz] = useState(null);
+  const [mis, setMis] = useState(null);
+
+  const loadAll = async (r) => {
+    setLoadingTop(true);
+    setLoadingStats(true);
+    setLoadingCharts(true);
+
+    const [aumRes, sipRes, statsRes, sipBizRes, misRes] = await Promise.all([
+      getJSON(`/api/aum?range=${r}`),
+      getJSON(`/api/sip?range=${r}`),
+      getJSON(`/api/stats?range=${r}`),
+      getJSON(`/api/sip-business?range=${r}`),
+      getJSON(`/api/monthly-mis?range=${r}`),
+    ]);
+
+    setAum(aumRes);
+    setSip(sipRes);
+    setStats(statsRes);
+    setSipBiz(sipBizRes);
+    setMis(misRes);
+
+    setLoadingTop(false);
+    setLoadingStats(false);
+    setLoadingCharts(false);
+  };
+
+  useEffect(() => {
+    loadAll(range);
+  }, [range]);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div>
+      {/* Navbar with theme toggle */}
+      <Navbar>
+        <ThemeToggle />
+      </Navbar>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      <main className="mx-auto max-w-7xl px-4 py-6 space-y-6">
+        {/* AUM/SIP cards */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card
+            title="Current"
+            action={
+              <button className="btn flex items-center gap-2">
+                <Image
+                  src="/icons/IcTwotoneRemoveRedEye.svg"
+                  alt="View"
+                  width={16}
+                  height={16}
+                  className="invert-0 dark:invert"
+                />
+                View Report
+              </button>
+            }
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {loadingTop ? (
+              <div className="skeleton h-24" />
+            ) : (
+              <div className="space-y-2">
+                <div className="text-sm opacity-70">AUM</div>
+                <div className="text-3xl font-bold">
+                  {aum.value}{" "}
+                  <span className="text-base font-medium">Cr</span>
+                </div>
+                <div className="badge">▲ {aum.mom}% MoM</div>
+              </div>
+            )}
+          </Card>
+
+          <Card
+            title="Current"
+            action={
+              <button className="btn flex items-center gap-2">
+                <Image
+                  src="/icons/IcTwotoneRemoveRedEye.svg"
+                  alt="View"
+                  width={16}
+                  height={16}
+                  className="invert-0 dark:invert"
+                />
+                View Report
+              </button>
+            }
           >
-            Read our docs
-          </a>
+            {loadingTop ? (
+              <div className="skeleton h-24" />
+            ) : (
+              <div className="space-y-2">
+                <div className="text-sm opacity-70">SIP</div>
+                <div className="text-3xl font-bold">
+                  {sip.value}{" "}
+                  <span className="text-base font-medium">Lakh</span>
+                </div>
+                <div className="badge">▲ {sip.mom}% MoM</div>
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Time filter */}
+        <TimeFilterBar onChange={setRange} />
+
+        {/* Stat cards */}
+        <div className="grid md:grid-cols-5 gap-4">
+          <StatCard
+            loading={loadingStats}
+            icon="/pic1.png"
+            title="Purchases"
+            count={stats?.purchases.count}
+            amount={`${stats?.purchases.amount} INR`}
+          />
+          <StatCard
+            loading={loadingStats}
+            icon="/pic2.png"
+            title="Redemptions"
+            count={stats?.redemptions.count}
+            amount={`${stats?.redemptions.amount} INR`}
+          />
+          <StatCard
+            loading={loadingStats}
+            icon="/pic3.png"
+            title="Rej. Transactions"
+            count={stats?.rejected.count}
+            amount={`${stats?.rejected.amount} INR`}
+          />
+          <StatCard
+            loading={loadingStats}
+            icon="/pic4.png"
+            title="SIP Rejections"
+            count={stats?.sipRej.count}
+            amount={`${stats?.sipRej.amount} INR`}
+          />
+          <StatCard
+            loading={loadingStats}
+            icon="/pic5.png"
+            title="New SIP"
+            count={stats?.newSip.count}
+            amount={`${stats?.newSip.amount} INR`}
+          />
+        </div>
+
+        {/* Charts */}
+        <div className="grid lg:grid-cols-3 gap-4">
+          <Card
+            title="CLIENTS"
+            action={
+              <button className="btn flex items-center gap-2">
+                <Image
+                  src="/icons/IconamoonCloudDownload.svg"
+                  alt="Download"
+                  width={16}
+                  height={16}
+                  className="invert-0 dark:invert"
+                />
+                Download Report
+              </button>
+            }
+            className="lg:col-span-1"
+          >
+            {loadingCharts ? (
+              <ChartSkeleton />
+            ) : (
+              <ClientsBubbleChart data={{}} loading={false} />
+            )}
+          </Card>
+
+          <Card
+            title="SIP BUSINESS CHART"
+            action={
+              <button className="btn flex items-center gap-2">
+                <Image
+                  src="/icons/IcTwotoneRemoveRedEye.svg"
+                  alt="View"
+                  width={16}
+                  height={16}
+                  className="invert-0 dark:invert"
+                />
+                View Report
+              </button>
+            }
+            className="lg:col-span-1"
+          >
+            <SipBusinessChart data={sipBiz} loading={loadingCharts} />
+          </Card>
+
+          <Card
+            title="MONTHLY MIS"
+            action={
+              <button className="btn flex items-center gap-2">
+                <Image
+                  src="/icons/IcTwotoneRemoveRedEye.svg"
+                  alt="View"
+                  width={16}
+                  height={16}
+                  className="invert-0 dark:invert"
+                />
+                View Report
+              </button>
+            }
+            className="lg:col-span-1"
+          >
+            <MonthlyMisChart data={mis} loading={loadingCharts} />
+          </Card>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
