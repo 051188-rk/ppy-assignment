@@ -74,7 +74,6 @@ export default function Page() {
       setMis(misRes);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-      // Handle error gracefully if needed
     } finally {
       setLoadingTop(false);
       setLoadingStats(false);
@@ -203,7 +202,7 @@ export default function Page() {
           <TimeFilterBar onChange={setRange} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-5 gap-4">
           <StatCard
             loading={loadingStats}
             icon="/pic1.png"
@@ -231,6 +230,13 @@ export default function Page() {
             title="SIP Rejections"
             count={stats?.sipRej.count}
             amount={`${stats?.sipRej.amount} INR`}
+          />
+          <StatCard
+            loading={loadingStats}
+            icon="/pic5.png"
+            title="New SIP"
+            count={stats?.newSip.count}
+            amount={`${stats?.newSip.amount} INR`}
           />
         </div>
 
