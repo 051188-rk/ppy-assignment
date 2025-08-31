@@ -1,16 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import dynamic from 'next/dynamic';
 import Navbar from "./components/Navbar";
 import Card from "./components/Card";
 import TimeFilterBar from "./components/TimeFilterBar";
 import StatCard from "./components/StatCard";
-import ClientsBubbleChart from "./components/ClientsBubbleChart";
-import SipBusinessChart from "./components/SipBusinessChart";
-import MonthlyMisChart from "./components/MonthlyMisChart";
+import PdfExport from "./components/PdfExport";
+import ReportModal from "./components/ReportModal";
 import ChartSkeleton from "./components/ChartSkeleton";
-import ThemeToggle from "./components/ThemeToggle";
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+
+// Dynamically import charts with no SSR
+const ClientsBubbleChart = dynamic(
+  () => import('./components/ClientsBubbleChart'),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+
+const SipBusinessChart = dynamic(
+  () => import('./components/SipBusinessChart'),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+
+const MonthlyMisChart = dynamic(
+  () => import('./components/MonthlyMisChart'),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
 
 async function getJSON(path) {
   const res = await fetch(path, { cache: "no-store" });
@@ -29,109 +46,164 @@ export default function Page() {
   const [stats, setStats] = useState(null);
   const [sipBiz, setSipBiz] = useState(null);
   const [mis, setMis] = useState(null);
+  const [activeModal, setActiveModal] = useState(null);
+  const dashboardRef = useRef(null);
+  const aumCardRef = useRef(null);
+  const sipCardRef = useRef(null);
+  const clientsChartRef = useRef(null);
+  const sipBusinessChartRef = useRef(null);
+  const monthlyMisChartRef = useRef(null);
 
   const loadAll = async (r) => {
     setLoadingTop(true);
     setLoadingStats(true);
     setLoadingCharts(true);
 
-    const [aumRes, sipRes, statsRes, sipBizRes, misRes] = await Promise.all([
-      getJSON(`/api/aum?range=${r}`),
-      getJSON(`/api/sip?range=${r}`),
-      getJSON(`/api/stats?range=${r}`),
-      getJSON(`/api/sip-business?range=${r}`),
-      getJSON(`/api/monthly-mis?range=${r}`),
-    ]);
-
-    setAum(aumRes);
-    setSip(sipRes);
-    setStats(statsRes);
-    setSipBiz(sipBizRes);
-    setMis(misRes);
-
-    setLoadingTop(false);
-    setLoadingStats(false);
-    setLoadingCharts(false);
+    try {
+      const [aumRes, sipRes, statsRes, sipBizRes, misRes] = await Promise.all([
+        getJSON(`/api/aum?range=${r}`),
+        getJSON(`/api/sip?range=${r}`),
+        getJSON(`/api/stats?range=${r}`),
+        getJSON(`/api/sip-business?range=${r}`),
+        getJSON(`/api/monthly-mis?range=${r}`),
+      ]);
+      setAum(aumRes);
+      setSip(sipRes);
+      setStats(statsRes);
+      setSipBiz(sipBizRes);
+      setMis(misRes);
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+      // Handle error gracefully if needed
+    } finally {
+      setLoadingTop(false);
+      setLoadingStats(false);
+      setLoadingCharts(false);
+    }
   };
 
   useEffect(() => {
     loadAll(range);
   }, [range]);
 
+  const exportComponentToPdf = async (ref, title) => {
+    if (!ref?.current) return;
+    
+    try {
+      const canvas = await html2canvas(ref.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgWidth = 190;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+      pdf.save(`${title.replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
+  };
+
+  const openModal = (modalType) => {
+    setActiveModal(modalType);
+  };
+
+  const handleDownload = (ref, title) => {
+    exportComponentToPdf(ref, title);
+  };
+
   return (
-    <div>
-      {/* Navbar with theme toggle */}
-      <Navbar>
-        <ThemeToggle />
-      </Navbar>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Navbar />
+      
+      <div className="fixed top-4 right-4 z-50">
+        <PdfExport dashboardRef={dashboardRef} />
+      </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 space-y-6">
-        {/* AUM/SIP cards */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <Card
-            title="Current"
-            action={
-              <button className="btn flex items-center gap-2">
-                <Image
-                  src="/icons/IcTwotoneRemoveRedEye.svg"
-                  alt="View"
-                  width={16}
-                  height={16}
-                  className="invert-0 dark:invert"
-                />
-                View Report
-              </button>
-            }
-          >
-            {loadingTop ? (
-              <div className="skeleton h-24" />
-            ) : (
-              <div className="space-y-2">
-                <div className="text-sm opacity-70">AUM</div>
-                <div className="text-3xl font-bold">
-                  {aum.value}{" "}
-                  <span className="text-base font-medium">Cr</span>
+      <main ref={dashboardRef} className="mx-auto max-w-7xl px-4 py-6 space-y-6 bg-white dark:bg-gray-900">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div ref={aumCardRef}>
+            <Card
+              title="Current"
+              action={
+                <button 
+                  className="btn flex items-center gap-2"
+                  onClick={() => openModal('aum')}
+                >
+                  <Image
+                    src="/icons/IcTwotoneRemoveRedEye.svg"
+                    alt="View"
+                    width={16}
+                    height={16}
+                    className="invert-0 dark:invert"
+                  />
+                  View Report
+                </button>
+              }
+            >
+              {loadingTop ? (
+                <div className="skeleton h-24" />
+              ) : (
+                <div className="space-y-2">
+                  <div className="text-sm opacity-70">AUM</div>
+                  <div className="text-3xl font-bold">
+                    {aum?.value} <span className="text-base font-medium">Cr</span>
+                  </div>
+                  <div className="badge">▲ {aum?.mom}% MoM</div>
                 </div>
-                <div className="badge">▲ {aum.mom}% MoM</div>
-              </div>
-            )}
-          </Card>
+              )}
+            </Card>
+          </div>
 
-          <Card
-            title="Current"
-            action={
-              <button className="btn flex items-center gap-2">
-                <Image
-                  src="/icons/IcTwotoneRemoveRedEye.svg"
-                  alt="View"
-                  width={16}
-                  height={16}
-                  className="invert-0 dark:invert"
-                />
-                View Report
-              </button>
-            }
-          >
-            {loadingTop ? (
-              <div className="skeleton h-24" />
-            ) : (
-              <div className="space-y-2">
-                <div className="text-sm opacity-70">SIP</div>
-                <div className="text-3xl font-bold">
-                  {sip.value}{" "}
-                  <span className="text-base font-medium">Lakh</span>
+          <div ref={sipCardRef}>
+            <Card
+              title="Current"
+              action={
+                <button 
+                  className="btn flex items-center gap-2"
+                  onClick={() => openModal('sip')}
+                >
+                  <Image
+                    src="/icons/IcTwotoneRemoveRedEye.svg"
+                    alt="View"
+                    width={16}
+                    height={16}
+                    className="invert-0 dark:invert"
+                  />
+                  View Report
+                </button>
+              }
+            >
+              {loadingTop ? (
+                <div className="skeleton h-24" />
+              ) : (
+                <div className="space-y-2">
+                  <div className="text-sm opacity-70">SIP</div>
+                  <div className="text-3xl font-bold">
+                    {sip?.value} <span className="text-base font-medium">Lakh</span>
+                  </div>
+                  <div className="badge">▲ {sip?.mom}% MoM</div>
                 </div>
-                <div className="badge">▲ {sip.mom}% MoM</div>
-              </div>
-            )}
-          </Card>
+              )}
+            </Card>
+          </div>
         </div>
 
-        {/* Time filter */}
-        <TimeFilterBar onChange={setRange} />
+        <div className="flex justify-end">
+          <TimeFilterBar onChange={setRange} />
+        </div>
 
-        {/* Stat cards */}
-        <div className="grid md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             loading={loadingStats}
             icon="/pic1.png"
@@ -160,79 +232,162 @@ export default function Page() {
             count={stats?.sipRej.count}
             amount={`${stats?.sipRej.amount} INR`}
           />
-          <StatCard
-            loading={loadingStats}
-            icon="/pic5.png"
-            title="New SIP"
-            count={stats?.newSip.count}
-            amount={`${stats?.newSip.amount} INR`}
-          />
         </div>
 
-        {/* Charts */}
         <div className="grid lg:grid-cols-3 gap-4">
-          <Card
-            title="CLIENTS"
-            action={
-              <button className="btn flex items-center gap-2">
-                <Image
-                  src="/icons/IconamoonCloudDownload.svg"
-                  alt="Download"
-                  width={16}
-                  height={16}
-                  className="invert-0 dark:invert"
-                />
-                Download Report
-              </button>
-            }
-            className="lg:col-span-1"
-          >
-            {loadingCharts ? (
-              <ChartSkeleton />
-            ) : (
-              <ClientsBubbleChart data={{}} loading={false} />
-            )}
-          </Card>
+          <div ref={clientsChartRef}>
+            <Card
+              title="CLIENTS"
+              action={
+                <button 
+                  className="btn flex items-center gap-2"
+                  onClick={() => handleDownload(clientsChartRef, 'Clients Report')}
+                >
+                  <Image
+                    src="/icons/IconamoonCloudDownload.svg"
+                    alt="Download"
+                    width={16}
+                    height={16}
+                    className="invert-0 dark:invert"
+                  />
+                  Download Report
+                </button>
+              }
+              className="lg:col-span-1"
+            >
+              {loadingCharts ? (
+                <ChartSkeleton />
+              ) : (
+                <ClientsBubbleChart data={stats?.clients || {}} loading={loadingCharts} />
+              )}
+            </Card>
+          </div>
 
-          <Card
-            title="SIP BUSINESS CHART"
-            action={
-              <button className="btn flex items-center gap-2">
-                <Image
-                  src="/icons/IcTwotoneRemoveRedEye.svg"
-                  alt="View"
-                  width={16}
-                  height={16}
-                  className="invert-0 dark:invert"
-                />
-                View Report
-              </button>
-            }
-            className="lg:col-span-1"
-          >
-            <SipBusinessChart data={sipBiz} loading={loadingCharts} />
-          </Card>
+          <div ref={sipBusinessChartRef}>
+            <Card
+              title="SIP BUSINESS CHART"
+              action={
+                <button 
+                  className="btn flex items-center gap-2"
+                  onClick={() => openModal('sipBusiness')}
+                >
+                  <Image
+                    src="/icons/IcTwotoneRemoveRedEye.svg"
+                    alt="View"
+                    width={16}
+                    height={16}
+                    className="invert-0 dark:invert"
+                  />
+                  View Report
+                </button>
+              }
+              className="lg:col-span-1"
+            >
+              {loadingCharts ? (
+                <ChartSkeleton />
+              ) : (
+                <SipBusinessChart data={sipBiz} loading={loadingCharts} />
+              )}
+            </Card>
+          </div>
 
-          <Card
-            title="MONTHLY MIS"
-            action={
-              <button className="btn flex items-center gap-2">
-                <Image
-                  src="/icons/IcTwotoneRemoveRedEye.svg"
-                  alt="View"
-                  width={16}
-                  height={16}
-                  className="invert-0 dark:invert"
-                />
-                View Report
-              </button>
-            }
-            className="lg:col-span-1"
-          >
-            <MonthlyMisChart data={mis} loading={loadingCharts} />
-          </Card>
+          <div ref={monthlyMisChartRef}>
+            <Card
+              title="MONTHLY MIS"
+              action={
+                <button 
+                  className="btn flex items-center gap-2"
+                  onClick={() => openModal('monthlyMis')}
+                >
+                  <Image
+                    src="/icons/IcTwotoneRemoveRedEye.svg"
+                    alt="View"
+                    width={16}
+                    height={16}
+                    className="invert-0 dark:invert"
+                  />
+                  View Report
+                </button>
+              }
+              className="lg:col-span-1"
+            >
+              {loadingCharts ? (
+                <ChartSkeleton />
+              ) : (
+                <MonthlyMisChart data={mis} loading={loadingCharts} />
+              )}
+            </Card>
+          </div>
         </div>
       </main>
+
+      <ReportModal 
+        isOpen={activeModal === 'aum'} 
+        onClose={() => setActiveModal(null)}
+        title="AUM Report"
+        onDownload={() => handleDownload(aumCardRef, 'AUM_Report')}
+      >
+        <div className="p-6 bg-white dark:bg-gray-800 rounded-lg">
+          <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">AUM Overview</h3>
+          <div className="space-y-4">
+            <div className="text-4xl font-bold text-gray-900 dark:text-white">
+              {aum?.value} <span className="text-xl font-medium">Cr</span>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">
+              <span className="text-green-500">▲ {aum?.mom}%</span> MoM Growth
+            </div>
+          </div>
+        </div>
+      </ReportModal>
+
+      <ReportModal 
+        isOpen={activeModal === 'sip'} 
+        onClose={() => setActiveModal(null)}
+        title="SIP Report"
+        onDownload={() => handleDownload(sipCardRef, 'SIP_Report')}
+      >
+        <div className="p-6 bg-white dark:bg-gray-800 rounded-lg">
+          <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">SIP Overview</h3>
+          <div className="space-y-4">
+            <div className="text-4xl font-bold text-gray-900 dark:text-white">
+              {sip?.value} <span className="text-xl font-medium">Lakh</span>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">
+              <span className="text-green-500">▲ {sip?.mom}%</span> MoM Growth
+            </div>
+          </div>
+        </div>
+      </ReportModal>
+
+      <ReportModal 
+        isOpen={activeModal === 'sipBusiness'} 
+        onClose={() => setActiveModal(null)}
+        title="SIP Business Chart"
+        onDownload={() => handleDownload(sipBusinessChartRef, 'SIP_Business_Chart')}
+      >
+        <div className="h-[500px] w-full">
+          {loadingCharts ? (
+            <ChartSkeleton />
+          ) : (
+            <SipBusinessChart data={sipBiz} loading={loadingCharts} />
+          )}
+        </div>
+      </ReportModal>
+
+      <ReportModal 
+        isOpen={activeModal === 'monthlyMis'} 
+        onClose={() => setActiveModal(null)}
+        title="Monthly MIS"
+        onDownload={() => handleDownload(monthlyMisChartRef, 'Monthly_MIS_Chart')}
+      >
+        <div className="h-[500px] w-full">
+          {loadingCharts ? (
+            <ChartSkeleton />
+          ) : (
+            <MonthlyMisChart data={mis} loading={loadingCharts} />
+          )}
+        </div>
+      </ReportModal>
     </div>
   );
 }

@@ -14,7 +14,7 @@ export default function SipBusinessChart({ data, loading }) {
   const line = data?.line ?? [120, 100, 98, 110];
 
   return (
-    <div className="h-80 p-4 bg-white dark:bg-gray-800 rounded-lg shadow relative">
+    <div className="h-80 p-4 bg-white dark:bg-gray-800 rounded-lg shadow relative chart-container">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">SIP Business</h3>
         <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium">

@@ -67,7 +67,7 @@ export default function ClientsBubbleChart({ data, loading }) {
   };
 
   return (
-    <div className="h-64">
+    <div className="h-64 chart-container">
       <Bubble data={cfg} options={options} />
     </div>
   );

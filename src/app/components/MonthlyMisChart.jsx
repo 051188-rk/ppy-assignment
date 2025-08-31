@@ -24,7 +24,7 @@ export default function MonthlyMisChart({ data, loading }) {
   const d4 = data?.d4 ?? [0.15, 0.12, 0.2, 0.3, 0.35, 0.22]; // New dataset
 
   return (
-    <div className="h-64">
+    <div className="h-64 chart-container">
       <Line
         data={{
           labels,
