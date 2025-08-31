@@ -210,6 +210,7 @@ export default function Navbar() {
         <div className="mx-auto max-w-7xl px-4 flex gap-1 py-1.5 overflow-visible relative z-40">
           {menuItems.map((item) => (
             <div 
+              key={item.id}
               className={`relative ${item.hasDropdown ? 'pr-4' : ''}`}
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
