@@ -2,6 +2,9 @@
 import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 import Image from "next/image";
+import PdfExportButton from "./PdfExportButton";
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const menuItems = [
   { id: 1, name: "HOME" },
@@ -33,7 +36,7 @@ const menuItems = [
   }
 ];
 
-// SVG Icons data - Using actual SVGs from the icons folder
+// SVG Icons data
 const navIcons = [
   { 
     id: 1, 
@@ -103,14 +106,51 @@ const navIcons = [
   }
 ];
 
-export default function Navbar() {
+export default function Navbar({ dashboardRef }) {
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [redBarActiveDropdown, setRedBarActiveDropdown] = useState(null);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleRedBarDropdownClick = (id) => {
+    setRedBarActiveDropdown(redBarActiveDropdown === id ? null : id);
+  };
+
+  const exportToPdf = async () => {
+    if (!dashboardRef?.current) return;
+    
+    // Create a new PDF with A4 dimensions (in mm)
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    // Convert the dashboard content to an image
+    const canvas = await html2canvas(dashboardRef.current, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const imgWidth = 190;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    
+    pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+    pdf.save(`financial_report_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   return (
     <header className="sticky top-0 z-40 shadow-soft">
       {/* Top bar with logo, search, and controls */}
       <div className="bg-white dark:bg-[var(--card)] border-b border-slate-200/40 dark:border-white/10 relative z-40">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-4">
-          {/* Logo - Made even bigger */}
+        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-4">
+          {/* Logo */}
           <div className="flex-shrink-0">
             <Image 
               src="/logo.png" 
@@ -122,8 +162,8 @@ export default function Navbar() {
             />
           </div>
           
-          {/* Search bar - moved to left */}
-          <div className="flex-1 max-w-xl">
+          {/* Search bar - centered on mobile, moves to left on md+ */}
+          <div className="flex-1 max-w-xl hidden md:block">
             <div className="relative">
               <input
                 type="text"
@@ -147,7 +187,46 @@ export default function Navbar() {
             </div>
           </div>
           
-          {/* Icons with theme-aware SVGs and bottom tooltips */}
+          {/* Mobile-only search bar, icons, and menu button */}
+          <div className="flex-1 max-w-xl md:hidden">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <svg 
+                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24" 
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 md:hidden">
+            <ThemeToggle />
+            <PdfExportButton onExport={exportToPdf} size="sm" label="" />
+            <button 
+              onClick={toggleMobileMenu} 
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Toggle menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7"></path>
+              </svg>
+            </button>
+          </div>
+          
+          {/* Desktop Icons with theme-aware SVGs and bottom tooltips */}
           <div className="hidden md:flex items-center gap-1 ml-4">
             {navIcons.map((icon) => (
               <div key={icon.id} className="relative group">
@@ -176,9 +255,10 @@ export default function Navbar() {
               </div>
             ))}
             
-            {/* Theme Toggle */}
-            <div className="ml-2">
+            {/* Theme Toggle and Export to PDF on desktop */}
+            <div className="ml-2 flex items-center gap-2">
               <ThemeToggle />
+              <PdfExportButton onExport={exportToPdf} />
             </div>
             
             {/* Logout Button */}
@@ -204,19 +284,54 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+      
+      {/* Mobile Menu Dropdown */}
+      <div className={`md:hidden absolute w-full bg-white dark:bg-gray-800 shadow-md transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="px-4 py-3 border-b dark:border-gray-700">
+          <div className="flex flex-wrap gap-2 justify-center">
+            {navIcons.map((icon) => (
+              <div key={icon.id} className="relative group">
+                <button 
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  aria-label={icon.alt}
+                >
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    <Image 
+                      src={icon.path} 
+                      alt={icon.alt}
+                      width={24}
+                      height={24}
+                      className="w-full h-full object-contain dark:invert opacity-80 hover:opacity-100 transition-opacity"
+                      aria-hidden="true"
+                    />
+                  </div>
+                </button>
+                <div className="absolute z-50 left-1/2 transform -translate-x-1/2 mt-2 w-max">
+                  <div className="bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-lg">
+                    {icon.title}
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-      {/* Red strip menu - Made more compact */}
+      {/* Red strip menu */}
       <nav className="bg-red-600 text-white text-xs">
-        <div className="mx-auto max-w-7xl px-4 flex gap-1 py-1.5 overflow-visible relative z-40">
+        <div className="mx-auto max-w-7xl px-4 flex gap-1 py-1.5 overflow-x-auto md:overflow-visible relative z-40">
           {menuItems.map((item) => (
             <div 
               key={item.id}
-              className={`relative ${item.hasDropdown ? 'pr-4' : ''}`}
+              className={`relative flex-shrink-0 ${item.hasDropdown ? 'pr-4' : ''}`}
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
             >
               <button 
+                type="button"
                 className={`px-3 py-1.5 rounded hover:bg-red-700 transition-colors flex items-center whitespace-nowrap ${item.hasDropdown ? 'pr-2' : ''}`}
+                onClick={() => handleRedBarDropdownClick(item.id)}
               >
                 {item.name}
                 {item.hasDropdown && (
@@ -226,7 +341,7 @@ export default function Navbar() {
                 )}
               </button>
               
-              {item.hasDropdown && hoveredItem === item.id && (
+              {item.hasDropdown && (hoveredItem === item.id || redBarActiveDropdown === item.id) && (
                 <div className="absolute left-0 mt-0 w-48 bg-white dark:bg-gray-800 rounded-b-md shadow-xl py-1 z-[60] border border-gray-200 dark:border-gray-700">
                   {item.items.map((subItem, index) => (
                     <a

@@ -7,7 +7,6 @@ import Navbar from "./components/Navbar";
 import Card from "./components/Card";
 import TimeFilterBar from "./components/TimeFilterBar";
 import StatCard from "./components/StatCard";
-import PdfExport from "./components/PdfExport";
 import ReportModal from "./components/ReportModal";
 import ChartSkeleton from "./components/ChartSkeleton";
 import { jsPDF } from 'jspdf';
@@ -123,11 +122,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Navbar />
-      
-      <div className="fixed top-4 right-4 z-50">
-        <PdfExport dashboardRef={dashboardRef} />
-      </div>
+      <Navbar dashboardRef={dashboardRef} />
 
       <main ref={dashboardRef} className="mx-auto max-w-7xl px-4 py-6 space-y-6 bg-white dark:bg-gray-900">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -202,7 +197,7 @@ export default function Page() {
           <TimeFilterBar onChange={setRange} />
         </div>
 
-        <div className="grid md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           <StatCard
             loading={loadingStats}
             icon="/pic1.png"
@@ -240,7 +235,7 @@ export default function Page() {
           />
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div ref={clientsChartRef}>
             <Card
               title="CLIENTS"
