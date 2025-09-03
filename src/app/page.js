@@ -28,9 +28,12 @@ const MonthlyMisChart = dynamic(
   { ssr: false, loading: () => <ChartSkeleton /> }
 );
 
+const API_BASE_URL = "https://ppy-assignment-f9td.vercel.app";
+
 async function getJSON(path) {
-  const res = await fetch(path, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed fetch " + path);
+  const fullUrl = `${API_BASE_URL}${path}`;
+  const res = await fetch(fullUrl, { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed fetch " + fullUrl);
   return res.json();
 }
 
