@@ -23,6 +23,15 @@ A modern, responsive financial dashboard built with Next.js 14, Tailwind CSS, an
   <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/dark.png" alt="dark mode image" />
 </p>
 
+### Mobile Interface (Android via Capacitor)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss1.png" alt="mobile screenshot 1" width="23%"/>
+  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss2.png" alt="mobile screenshot 2" width="23%"/>
+  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss3.png" alt="mobile screenshot 3" width="23%"/>
+  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss4.png" alt="mobile screenshot 4" width="23%"/>
+  
+</p>
+
 ## 🛠 Tech Stack
 
 - **Framework**: Next.js 14 (App Router)
@@ -36,24 +45,28 @@ A modern, responsive financial dashboard built with Next.js 14, Tailwind CSS, an
 ## 📁 Directory Structure
 
 ```
-financial-dashboard/
-├── public/                  # Static files
-│   ├── icons/               # SVG icons for the navbar
-│   ├── light-mode-screenshot.png
-│   └── dark-mode-screenshot.png
+ppy-assignment/
+├── public/                      # Static assets served as-is
+│   ├── icons/                   # SVG icons for the navbar
+│   ├── light.png                # Light mode screenshot (README)
+│   ├── dark.png                 # Dark mode screenshot (README)
+│   ├── ss1.png                 # Mobile UI screenshots (README)
+│   ├── ss2.png
+│   ├── ss3.png
+│   └── ss4.png
 ├── src/
-│   ├── app/                 # App router
-│   │   ├── components/      # Reusable components
-│   │   │   ├── Card.jsx     # Card component
-│   │   │   ├── Navbar.jsx   # Navigation bar
-│   │   │   ├── StatCard.jsx # Stats display card
-│   │   │   └── charts/      # Chart components
-│   │   ├── page.js          # Main page
-│   │   └── globals.css      # Global styles
-│   └── lib/                 # Utility functions
-├── .gitignore
-├── next.config.js
+│   └── app/                     # Next.js App Router
+│       ├── components/          # Reusable UI components
+│       ├── page.js              # Main page
+│       └── globals.css          # Global styles
+├── android/                     # Capacitor Android project
+├── capacitor.config.ts          # Capacitor configuration
+├── next.config.js               # Next.js config (output: 'export')
+├── out/                         # Static export build output (generated)
 ├── package.json
+├── package-lock.json
+├── tailwind.config.js
+├── postcss.config.js
 └── README.md
 ```
 
@@ -69,7 +82,7 @@ financial-dashboard/
 1. Clone the repository:
    ```bash
    git clone https://github.com/051188-rk/ppy-assignment.git
-   cd financial-dashboard
+   cd ppy-assignment
    ```
 
 2. Install dependencies:
@@ -87,6 +100,59 @@ financial-dashboard/
    ```
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 📦 Android (Capacitor) Setup and Commands
+
+This project supports building and running the app as a native Android application using Capacitor. The project already includes `android/` and `capacitor.config.ts`.
+
+### One-time setup (if not already done)
+
+```bash
+# Install Capacitor packages
+npm install @capacitor/core @capacitor/android
+npm install -D @capacitor/cli
+
+# If the Android project is not present yet
+npx cap add android
+```
+
+### Build for Android (static export)
+
+```bash
+# 1) Build a static export (uses output: 'export' in next.config.js)
+npm run build
+
+# 2) Copy the web assets to the native project
+npx cap copy android
+
+# 3) (Optional) Sync dependencies and plugins
+npx cap sync android
+
+# 4) Open Android Studio
+npx cap open android
+```
+
+From Android Studio, build and run on an emulator or a connected device.
+
+### Common commands
+
+```bash
+# After making web changes
+npm run build && npx cap copy android
+
+# If you add/remove Capacitor plugins or config
+npx cap sync android
+
+# Clean and rebuild (Android Studio)
+# Build > Clean Project, then Build > Rebuild Project
+```
+
+### Migration notes
+
+- `capacitor.config.ts` sets `webDir` to `out`, which matches Next.js static export. Always run `npm run build` before `npx cap copy android` so the latest files are in `out/`.
+- The Next.js config (`next.config.js`) uses `output: 'export'` and `images.unoptimized: true` which makes the app compatible with Capacitor's local file serving.
+- Avoid server-only features (e.g., API routes relying on Node runtime) in the mobile build. Use static data or fetch from HTTPS APIs.
+- If you change `capacitor.config.ts` or add/remove plugins, run `npx cap sync android`.
 
 ## 🎨 Components
 
