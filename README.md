@@ -25,10 +25,10 @@ A modern, responsive financial dashboard built with Next.js 14, Tailwind CSS, an
 
 ### Mobile Interface (Android via Capacitor)
 <p align="center">
-  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss1.png" alt="mobile screenshot 1" width="23%"/>
-  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss2.png" alt="mobile screenshot 2" width="23%"/>
-  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss3.png" alt="mobile screenshot 3" width="23%"/>
-  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss4.png" alt="mobile screenshot 4" width="23%"/>
+  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss1.jpg" alt="mobile screenshot 1" width="23%"/>
+  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss2.jpg" alt="mobile screenshot 2" width="23%"/>
+  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss3.jpg" alt="mobile screenshot 3" width="23%"/>
+  <img src="https://raw.githubusercontent.com/051188-rk/ppy-assignment/main/public/ss4.jpg" alt="mobile screenshot 4" width="23%"/>
   
 </p>
 
@@ -50,10 +50,10 @@ ppy-assignment/
 │   ├── icons/                   # SVG icons for the navbar
 │   ├── light.png                # Light mode screenshot (README)
 │   ├── dark.png                 # Dark mode screenshot (README)
-│   ├── ss1.png                 # Mobile UI screenshots (README)
-│   ├── ss2.png
-│   ├── ss3.png
-│   └── ss4.png
+│   ├── ss1.jpg                 # Mobile UI screenshots (README)
+│   ├── ss2.jpg
+│   ├── ss3.jpg
+│   └── ss4.jpg
 ├── src/
 │   └── app/                     # Next.js App Router
 │       ├── components/          # Reusable UI components
